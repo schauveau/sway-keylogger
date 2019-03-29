@@ -22,7 +22,7 @@ ptrace is a Linux system call that provides the ability to interact with other p
 
 A Wayland compositor typically gets its inputs from the event devices in /dev/input/. For security reasons those devices are normally not accessible by regular users (only root and members of the input group). Wayland compitors are a special case. They typically use libinput in conjunction with libsystemd or liblogind to get access to the input devices for the current session. 
 
-So in practice, that means that during a Wayland session, the compositor is the only process that is supposed to have access to the raw input devices. The compositor is responsible fro dispatching the events to the relevant clients so that each window only sees the event that are relevant.
+So in practice, that means that during a Wayland session, the compositor is the only process that is supposed to have access to the raw input devices. The compositor is responsible for dispatching the events to the relevant clients so that each window only sees the event that are relevant.
 
 In our case, strace is attached to the Wayland compositor process and is configured to dump the result of the **read()** system calls from the **/dev/input/event\*** files. 
 
@@ -95,6 +95,8 @@ The most obvious use is to help debug problems with input devices (e.g. Help! My
 
 The second use is to make people aware that installing a keylogger is really easy and that is is pointless to secure the Wayland compositor [ "Securing the compositor against processes running as the current user in the same namespace is not going to work no matter what you do. It's not worth it to try to do it."](https://github.com/swaywm/sway/issues/3987#issuecomment-477603520). 
 
+The third use is to develop my sense of sarcasm.
+
 ## Is that a security problem?
 
 No because **strace** cannot be used to trace processes of other users (except by root).[ "Securing the compositor against processes running as the current user in the same namespace is not going to work no matter what you do. It's not worth it to try to do it."](https://github.com/swaywm/sway/issues/3987#issuecomment-477603520). 
@@ -121,6 +123,18 @@ Any process that exposes some opened files form /dev/input/ is probably a good t
 
 ## I am using Sway and it does not work.
 
-This is probably because ptrace is disabled either by Sway itself, by the sustem or because Sway was started suid-root.
+This is probably because ptrace is disabled either by Sway itself, by the system or because Sway was started suid-root.
+
+## I assume that this not working in windows that grab the input (lockscreen, password dialog, ...).
+
+The keylogger operates at the level of the linux input devices. A Wayland of XWayland client cannot prevent the input from being intercepted.
+
+## I get some key codes but they do not correspond to my actual keys.
+
+This is because the input devices are providing low-level keycodes. The actual keyboard layout is handled by the Wayland compositor (and XWayland). The keyboard modifiers (Shift, Control, Alt, ...) are also not applied.
+
+From a practical point of view, the keylogger acts as if the keyboard was Qwerty-US.
+
+
 
 
