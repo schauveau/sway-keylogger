@@ -109,9 +109,11 @@ As explained in the previous section, that is really not useful but if you reall
 
 * Method 1: Do not use Wayland compositors or critical applications if they allows *ptracing* (e.g. screen lockers, password wallets, ...).
 
-* Method 2: or encapsulate *ALL* your applications in containers with no visibility on the compositor process, remove strace, install a facial recognition device on you machine to detect unexpected users, and just in case disconnect your machine from the Internet. 
+* Method 2: Encapsulate *ALL* your applications in containers with no visibility on the compositor process, remove strace, install a facial recognition device on you machine to detect unexpected users, and just in case disconnect your machine from the Internet. 
 
-* Method 3: or patch the Sway source code by inserting a call to `prctl(PR_SET_DUMPABLE, 0)` at the beginning of the `main` function and also insert `#include <sys/prctl.h>` at the top of the file (see https://github.com/swaywm/sway/issues/3987 ).
+* Method 3: Patch the Sway source code by inserting a call to `prctl(PR_SET_DUMPABLE, 0)` at the beginning of the `main` function and also insert `#include <sys/prctl.h>` at the top of the file (see https://github.com/swaywm/sway/issues/3987 ).
+
+* Method 4: Restrict ptrace usage using [ptrace_scope](https://www.kernel.org/doc/Documentation/security/Yama.txt) (must be root).
 
 ## Would that work on my compositor?
 
