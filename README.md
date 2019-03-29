@@ -70,7 +70,7 @@ Finally, call strace with the required arguments.
     read(135, 0x55ff88f43658, 7176)         = -1 EAGAIN (Resource temporarily unavailable)
     ...
    
-Each hexadecimal dump corresponds to one of more **struct input_event** as defined in **linux/input.h**. It can be decoded by the provided C program to produce an output similar to the **evtest** utility.
+Each hexadecimal dump corresponds to one of more **struct input_event** as defined in [linux/input.h](https://github.com/torvalds/linux/blob/master/include/uapi/linux/input.h). The provided C program can take care of decoding that output in a form similar to the **evtest** utility. 
 
 All that can be automated by the provided bash script. 
 
