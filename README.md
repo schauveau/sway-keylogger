@@ -85,9 +85,15 @@ All that can be automated by the provided bash script.
     fd=66 time=44801.904784 type 1 (EV_KEY), code 32 (KEY_D), value 1
     fd=66 time=44801.904784 -------------- SYN_REPORT ------------
 
-## Is that different from [https://github.com/Aishou/wayland-keylogger]?
+## Is that different from [Aishou/wayland-keylogger](https://github.com/Aishou/wayland-keylogger)?
 
-Yes. That other keylogger intercepts the communications between the compositor and the wayland clients using the LD\_PRELOAD trick and can only be applied to new applications. My approach is different since it directly observes the communications between the compositor and the Linux kernel.
+Yes. That other keylogger intercepts the communications between the compositor and a wayland client using the LD\_PRELOAD trick and it can only be applied to new applications. My approach is different since it directly observes the communications between the compositor and the Linux kernel.
+
+## What are the practical and legal uses?
+
+The most obvious use is to help debug problems with input devices (e.g. Help! My multimedia keys do not work properly in Wayland!). 
+
+The second use is to make people aware that installing a keylogger is really easy and that is is pointless to secure the Wayland compositor [ "Securing the compositor against processes running as the current user in the same namespace is not going to work no matter what you do. It's not worth it to try to do it."](https://github.com/swaywm/sway/issues/3987#issuecomment-477603520). 
 
 ## Is that a security problem?
 
