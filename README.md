@@ -42,7 +42,7 @@ Second, get the list of input devices on the system. In that case, we are intere
      /sys/class/input/event3/device/name:Sleep Button
      /sys/class/input/event4/device/name:Lid Switch
 
-Second, find which FD (file descriptor) the compisitor is using for those inputs. In that case, that is 66 and 67.
+Second, find which FD (file descriptor) the compositor is using for those inputs. In that case, that is 66 and 67.
 
     (shell) ls -l /proc/2125/fd/ | grep /dev/input/event
     lrwx------ 1 foobar foobar 64 Mar 29 11:14 66 -> /dev/input/event0
@@ -70,9 +70,9 @@ Finally, call strace with the required arguments.
     read(135, 0x55ff88f43658, 7176)         = -1 EAGAIN (Resource temporarily unavailable)
     ...
    
-Each hexadecimal dump correspond to one of more **struct input_event** as defined in **linux/input.h**. It can be decoded by the provided C program to produce a simoilar output to the **evtest** utility.
+Each hexadecimal dump corresponds to one of more **struct input_event** as defined in **linux/input.h**. It can be decoded by the provided C program to produce an output similar to the **evtest** utility.
 
-All that can be automated by the provided bash script and C program. 
+All that can be automated by the provided bash script. 
 
     (shell) sway-keylogger -p 2125 -f 66,67
     # Using PID=2125
@@ -87,23 +87,23 @@ All that can be automated by the provided bash script and C program.
 
 ## Is that different from [https://github.com/Aishou/wayland-keylogger]?
 
-Yes. That other keylogger intercepts the communications between the compositor and the clients using the LD\_PRELOAD trick and  can only be applied to new applications. My approach is different since it directly observes the communications between the compositor and the Linux kernel.
+Yes. That other keylogger intercepts the communications between the compositor and the wayland clients using the LD\_PRELOAD trick and can only be applied to new applications. My approach is different since it directly observes the communications between the compositor and the Linux kernel.
 
 ## Is that a security problem?
 
-No because *strace* cannot be used to trace processes of other users (except by root).[ "Securing the compositor against processes running as the current user in the same namespace is not going to work no matter what you do. It's not worth it to try to do it."](https://github.com/swaywm/sway/issues/3987#issuecomment-477603520). 
+No because **strace** cannot be used to trace processes of other users (except by root).[ "Securing the compositor against processes running as the current user in the same namespace is not going to work no matter what you do. It's not worth it to try to do it."](https://github.com/swaywm/sway/issues/3987#issuecomment-477603520). 
 
-So, protecting a compositor against a trivial attack is pointless. It is a bit like locking your house. That is stupid because burglars can easily break your doors and windows.
+So, protecting a compositor against a trivial attack is pointless. It is a bit like locking your house which is stupid because burglars can easily break your doors and windows.
 
 ## And how can I prevent that trivial attack?
 
-As explained in the previous section. that is really not useful but if you really want to do that: 
+As explained in the previous section, that is really not useful but if you really want to do that: 
 
 * Method 1: Do not use Wayland compositors or critical applications if they allows *ptracing* (e.g. screen lockers, password wallets, ...).
 
-* Method 2: Encapsulate *ALL* your applications in containers with no visibility on the compositor process, remove strace, install a facial recognition device on you machine to detect unexpected users, and just in case disconnect your machine from the Internet. 
+* Method 2: or encapsulate *ALL* your applications in containers with no visibility on the compositor process, remove strace, install a facial recognition device on you machine to detect unexpected users, and just in case disconnect your machine from the Internet. 
 
-* Method 3: Patch the Sway source code by inserting a call to `prctl(PR_SET_DUMPABLE, 0)` at the beginning of the `main` function and also insert `#include <sys/prctl.h>` at the top of the file (see https://github.com/swaywm/sway/issues/3987 ).
+* Method 3: or patch the Sway source code by inserting a call to `prctl(PR_SET_DUMPABLE, 0)` at the beginning of the `main` function and also insert `#include <sys/prctl.h>` at the top of the file (see https://github.com/swaywm/sway/issues/3987 ).
 
 ## Would that work on my compositor?
 
@@ -111,10 +111,10 @@ There is an easy way to check if the keylogger can operates on any application o
 
     (shell) ls -l /proc/*/fd/* | grep /dev/input/
     
-Any process that exposes some files in /dev/input/ is probably a good target. 
+Any process that exposes some opened files form /dev/input/ is probably a good target. 
 
 ## I am using Sway and it does not work.
 
-This is probably because ptrace is disabled either by Sway itself, globally or because Sway was started suid-root.
+This is probably because ptrace is disabled either by Sway itself, by the sustem or because Sway was started suid-root.
 
 
